@@ -1,0 +1,496 @@
+---
+title: "DA_Project"
+author: "Shivani Sanjay Mahaddalkar"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+accidentsDF <- read.csv("D://Spring2021/DataAnalytics/archive (1)/accidents_2012_to_2014.csv")
+```
+
+#Examining the various columns
+
+```{r}
+View(accidentsDF)
+```
+The columns Accident_Index, Location_Easting_OSGR, Location_Northing_OSGR, Junction_Control, Special_Conditions_at_Site and Carriageway_Hazards need to be dropped as they do not provide any insight for further analysis.
+
+```{r}
+accidentsDF$Accident_Index <- NULL
+accidentsDF$Location_Easting_OSGR <- NULL
+accidentsDF$Location_Northing_OSGR <- NULL
+accidentsDF$Junction_Detail <- NULL
+accidentsDF$Special_Conditions_at_Site <- NULL
+accidentsDF$Carriageway_Hazards <- NULL
+
+```
+
+```{r}
+df11 <- accidentsDF %>%
+  group_by(Accident_Severity) %>%
+  summarise(counts = n())
+ggplot(df11, aes(x = Accident_Severity, y = counts)) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3) 
+```
+
+
+```{r}
+#accidentsDF$Surface_Condition <- 1
+accidentsDF$Surface_Condition[accidentsDF$Road_Surface_Conditions=="Dry"] = "Dry"
+accidentsDF$Surface_Condition[accidentsDF$Road_Surface_Conditions!="Dry"] = "Wet"
+accidentsDF$Surface_Condition <- as.factor(accidentsDF$Surface_Condition)
+str(accidentsDF$Surface_Condition)
+#accidentsDF$Surface_Condition <- NULL
+```
+
+```{r}
+accidentsAll <- accidentsDF
+accidentsSevere1 = accidentsDF[accidentsDF$Accident_Severity == 1,]
+accidentsSevere2 = accidentsDF[accidentsDF$Accident_Severity == 2,]
+accidentsSevere3 = accidentsDF[accidentsDF$Accident_Severity == 3,]
+set.seed(0)
+accidentsSevere1 <- accidentsSevere1[sample(nrow(accidentsSevere1), 500), ]
+set.seed(0)
+accidentsSevere2 <- accidentsSevere2[sample(nrow(accidentsSevere2), 500), ]
+set.seed(0)
+accidentsSevere3 <- accidentsSevere3[sample(nrow(accidentsSevere3), 500), ]
+accidentsDF2 = rbind(accidentsSevere1, accidentsSevere2, accidentsSevere3)
+attach(accidentsDF2)
+table(accidentsDF2$Accident_Severity)
+```
+
+```{r}
+#accidentsDF2$Weather1 <- 0
+accidentsDF$Weather1[accidentsDF$Weather_Condition!="Fine without high winds"] <- "Pleasant"
+accidentsDF$Weather1[accidentsDF$Weather_Condition=="Fine without high winds"] <- "Unpleasant"
+#accidentsDF2$Weather1 <- as.factor(accidentsDF2$Weather1)
+str(accidentsDF$Weather1)
+```
+```{r}
+#accidentsDF2$Surface_Condition <- 1
+accidentsDF$Surface_Condition[accidentsDF$Road_Surface_Conditions!="Dry"] = "Wet"
+accidentsDF$Surface_Condition[accidentsDF$Road_Surface_Conditions=="Dry"] = "Dry"
+#accidentsDF2$Surface_Condition <- as.factor(accidentsDF2$Surface_Condition)
+str(accidentsDF2$Surface_Condition)
+```
+
+```{r}
+df1 <- accidentsDF2 %>%
+  group_by(Weather1) %>%
+  summarise(counts = n())
+ggplot(df1, aes(x = Weather1, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 0))
+
+df12 <- accidentsDF %>%
+  group_by(Weather1) %>%
+  summarise(counts = n())
+ggplot(df12, aes(x = Weather1, y = counts),) +
+  geom_line(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle =0))
+```
+```{r}
+df21 <- accidentsDF2 %>%
+  group_by(Number_of_Vehicles) %>%
+  summarise(counts = n())
+ggplot(df21, aes(x = Number_of_Vehicles, y = counts),) +
+  geom_line(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+
+df22 <- accidentsDF[accidentsDF$Number_of_Vehicles<7,] %>%
+  group_by(Number_of_Vehicles) %>%
+  summarise(counts = n())
+ggplot(df22, aes(x = Number_of_Vehicles, y = counts),) +
+  geom_line(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+df31 <- accidentsDF2 %>%
+  group_by(Day_of_Week) %>%
+  summarise(counts = n())
+ggplot(df31, aes(x = Day_of_Week, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+
+df32 <- accidentsDF %>%
+  group_by(Day_of_Week) %>%
+  summarise(counts = n())
+ggplot(df32, aes(x = Day_of_Week, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+df41 <- accidentsDF2 %>%
+  group_by(Surface_Condition) %>%
+  summarise(counts = n())
+ggplot(df41, aes(x = Surface_Condition, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+
+df42 <- accidentsDF %>%
+  group_by(Surface_Condition) %>%
+  summarise(counts = n())
+ggplot(df42, aes(x = Surface_Condition, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+df51 <- accidentsDF2 %>%
+  group_by(Urban_or_Rural_Area) %>%
+  summarise(counts = n())
+ggplot(df51, aes(x = Urban_or_Rural_Area, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+
+df52 <- accidentsDF %>%
+  group_by(Urban_or_Rural_Area) %>%
+  summarise(counts = n())
+ggplot(df52, aes(x = Urban_or_Rural_Area, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+df61 <- accidentsDF2 %>%
+  group_by(X1st_Road_Class) %>%
+  summarise(counts = n())
+ggplot(df61, aes(x = X1st_Road_Class, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+
+df62 <- accidentsDF %>%
+  group_by(X1st_Road_Class) %>%
+  summarise(counts = n())
+ggplot(df62, aes(x = X1st_Road_Class, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+df71 <- accidentsDF2 %>%
+  group_by(Speed_limit) %>%
+  summarise(counts = n())
+ggplot(df71, aes(x = Speed_limit, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+
+df72 <- accidentsDF %>%
+  group_by(Speed_limit) %>%
+  summarise(counts = n())
+ggplot(df72, aes(x = Speed_limit, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+df81 <- accidentsDF2 %>%
+  group_by(Road_Type) %>%
+  summarise(counts = n())
+ggplot(df81, aes(x = Road_Type, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+
+df82 <- accidentsDF %>%
+  group_by(Road_Type) %>%
+  summarise(counts = n())
+ggplot(df82, aes(x = Road_Type, y = counts),) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+df91 <- accidentsDF2 %>%
+  group_by(Year) %>%
+  summarise(counts = n())
+ggplot(df91, aes(x = Year, y = counts),) +
+  geom_line(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+
+df92 <- accidentsDF %>%
+  group_by(Year) %>%
+  summarise(counts = n())
+ggplot(df92, aes(x = Year, y = counts),) +
+  geom_line(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+library(caret)
+summary(accidentsDF2)
+accidentsDF2$X1st_Road_Class <- as.factor(accidentsDF2$X1st_Road_Class)
+accidentsDF2$Urban_or_Rural_Area <- as.factor(accidentsDF2$Urban_or_Rural_Area)
+accidentsDF2$Day_of_Week <- as.factor(accidentsDF2$Day_of_Week)
+accidentsDF2$Accident_Severity <- as.factor(accidentsDF2$Accident_Severity)
+accidentsDF2$Surface_Condition <- as.factor(accidentsDF2$Surface_Condition)
+accidentsDF2$Weather1 <- as.factor(accidentsDF2$Weather1)
+
+```
+`
+```{r}
+library(nnet)
+multinom_model <- multinom(Accident_Severity ~ Weather1+Day_of_Week+Surface_Condition+Urban_or_Rural_Area+X1st_Road_Class, data = accidentsDF2)
+summary(multinom_model)
+
+```
+```{r}
+exp(coef(multinom_model))
+```
+```{r}
+set.seed(13)
+trainData <- createDataPartition(accidentsDF2$Accident_Severity, p=.75, list = FALSE)
+trainingData <- accidentsDF2[trainData,]
+testingData <- accidentsDF2[-trainData,]
+```
+
+```{r}
+multinom_model1 <- multinom(Accident_Severity ~ Weather1+Day_of_Week+Surface_Condition+Urban_or_Rural_Area+X1st_Road_Class, data = trainingData)
+summary(multinom_model1)
+exp(coef(multinom_model1))
+```
+
+```{r}
+confusionMatrix(multinom_model1$pred,trainingData$Accident_Severity)
+confusionMatrix(as.factor(trainingData$Accident_Severity), as.factor(testingData$ClassPredicted))
+```
+
+```{r}
+# Predicting the values for train dataset
+trainingData$Accident_Severity_Predicted <- predict(multinom_model1, newdata = trainingData, "class")
+# Building classification table
+tab <- table(trainingData$Accident_Severity, trainingData$Accident_Severity_Predicted)
+tab
+# Calculating accuracy - sum of diagonal elements divided by total obs
+#round((sum(diag(tab))/sum(tab))*100,2)
+```
+The model shows an accuracy of 44.18 on the training data set.
+
+```{r}
+testingData$ClassPredicted <- predict(multinom_model1, newdata = testingData, "class")
+# Building classification table
+tab <- table(testingData$Accident_Severity, testingData$ClassPredicted)
+tab
+round((sum(diag(tab))/sum(tab))*100,2)
+```
+The testing data shows an accuracy of 40.53
+
+```{r}
+confusionMatrix(as.factor(testingData$Accident_Severity), as.factor(testingData$ClassPredicted))
+```
+
+```{r}
+library(rpart)       # direct engine for decision tree application
+library(caret)       # meta engine for decision tree application
+library(AmesHousing)
+
+dt_model <- train(Accident_Severity ~ Weather1+Day_of_Week+Surface_Condition+Urban_or_Rural_Area+X1st_Road_Class, data = trainingData, metric = "Accuracy", method = "rpart")
+names(dt_model)
+```
+```{r}
+print(dt_model$finalModel)
+```
+
+```{r}
+testingData$ClassPredicted <- predict(dt_model, newdata = testingData, "raw")
+# Building classification table
+tab <- table(testingData$Accident_Severity, testingData$ClassPredicted)
+tab
+round((sum(diag(tab))/sum(tab))*100,2)
+```
+
+
+```{r}
+testingData$pred <- predict (dt_model, newdata = testingData, type = c("raw"))
+confusionMatrix(testingData$Accident_Severity,testingData$pred)
+```
+
+```{r}
+library(rpart.plot)
+dt_model2 <- rpart(Accident_Severity ~ Weather1+Day_of_Week+Surface_Condition+Urban_or_Rural_Area+X1st_Road_Class, data = trainingData, method = "class", control = rpart.control(cp=0,minsplit=10, maxdepth=4))
+dt_model2
+rpart.plot(dt_model2)
+```
+
+```{r}
+testingData$pred <- predict(dt_model2, newdata = testingData, type = c("class"))
+confusionMatrix(testingData$Accident_Severity,testingData$pred)
+```
+```{r}
+# basic Rweka packages
+library(RWeka)       # Weka
+library(party)       # A computational toolbox for recursive partitioning
+library(partykit)
+```
+
+```{r}
+## set up potential values for confidence factor and minimum number of instances
+C.values <- c(0.01,0.05,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.5)
+M.values <- c(2,3,4,5,6,7,8,9,10)
+
+## variable to record the best model
+best_performance = 0.0
+best_c <- 0.0
+best_m <- 0.0
+
+for (i in 1:length(C.values)) {
+  
+  for (j in 1:length(M.values)) {
+    
+    c_value = C.values[i]
+    
+    m_value = M.values[j]
+    
+    m <- J48(Accident_Severity ~ Weather1+Day_of_Week+Surface_Condition+Urban_or_Rural_Area+X1st_Road_Class, data = trainingData, 
+             control = Weka_control(U=FALSE, C = c_value, M=m_value))
+  
+    e <- evaluate_Weka_classifier(m,
+                                  numFolds = 3, complexity = TRUE,
+                                  seed = 9, class = TRUE)
+
+    if (e$details['pctCorrect'] > best_performance) {
+      best_performance <- e$details['pctCorrect']
+      
+      best_c <- c_value
+      best_m <- m_value
+    }
+    
+  }
+    
+}
+
+print(paste("best accuracy: ", best_performance))
+print(paste("best m: ", best_m))
+print(paste("best c: ", best_c))
+
+m=J48(Accident_Severity ~ Weather1+Day_of_Week+Surface_Condition+Urban_or_Rural_Area+X1st_Road_Class, data = trainingData, control=Weka_control(U=FALSE, M=best_m, C=best_c))
+
+testingData$pred<- predict (m, newdata = testingData, type = c("class"))
+confusionMatrix(testingData$Accident_Severity,testingData$pred)
+```
+```{r}
+library(e1071)
+```
+```{r}
+# create response and feature data
+trainingData <- subset(trainingData, , c("Weather1", "Day_of_Week", "Surface_Condition", "Urban_or_Rural_Area", "X1st_Road_Class", "Accident_Severity"))
+testingData <- subset(testingData, , c("Weather1", "Day_of_Week", "Surface_Condition", "Urban_or_Rural_Area", "X1st_Road_Class", "Accident_Severity"))
+features <- setdiff(names(trainingData), "Accident_Severity")
+x <- trainingData[, features]
+y <- trainingData$Accident_Severity
+```
+
+
+```{r}
+# set up 3-fold cross validation procedure
+train_control <- trainControl(
+  method = "cv", 
+  number = 3
+  )
+
+# more advanced option, run 3 fold cross validation 10 times
+train_control_adv <- trainControl(
+  method = "repeatedcv", 
+  number = 3,
+  repeats = 10
+  )
+
+# set up tuning grid
+search_grid <- expand.grid(.cp=c(0.01,0.05,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45))
+
+# train model
+dt.m1 <- train(
+  x = x,
+  y = y,
+  method = "rpart",
+  trControl = train_control,
+  tuneGrid = search_grid
+  )
+
+# top 5 modesl
+dt.m1$results %>% 
+  top_n(5, wt = Accuracy) %>%
+  arrange(desc(Accuracy))
+
+# results for best model
+confusionMatrix(dt.m1)
+stime1 <- Sys.time()
+pred <- predict(dt.m1, newdata = testingData)
+Sys.time() - stime1
+confusionMatrix(pred, testingData$Accident_Severity)
+```
+```{r}
+# set up 3-fold cross validation procedure
+train_control <- trainControl(
+  method = "cv", 
+  number = 3
+  )
+
+# more advanced option, run 3 fold cross validation 10 times
+train_control_adv <- trainControl(
+  method = "repeatedcv", 
+  number = 3,
+  repeats = 10
+  )
+
+# set up tuning grid
+search_grid <- expand.grid(usekernel = c(FALSE),
+                         laplace = c(0, 1), 
+                         adjust = c(0,1,2))
+
+# train model
+nb.m1 <- train(
+  x = x,
+  y = y,
+  method = "naive_bayes",
+  trControl = train_control,
+  tuneGrid = search_grid
+  )
+
+```
+
+```{r}
+# top 5 modesl
+nb.m1$results %>% 
+  top_n(5, wt = Accuracy) %>%
+  arrange(desc(Accuracy))
+
+# results for best model
+confusionMatrix(nb.m1)
+stime <- Sys.time()
+pred <- predict(nb.m1, newdata = testingData)
+Sys.time() - stime
+confusionMatrix(pred, testingData$Accident_Severity)
+```
+
+```{r}
+trial <- data.frame(A = c("Pleasant", "Unpleasant"),
+                    B = c(91530 , 373167))
+```
+
+```{r}
+ggplot(data=trial, aes(x=A, y=B)) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = B), vjust = -0.3)+
+  theme(axis.text.x = element_text(angle = 0))
+```
+```{r}
+
+```
+
