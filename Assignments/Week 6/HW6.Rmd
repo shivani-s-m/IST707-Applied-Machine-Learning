@@ -1,0 +1,137 @@
+---
+title: "Week7"
+output: word_document
+---
+```{r}
+library(e1071)
+```
+
+```{r}
+setwd("D:/Spring2021/DataAnalytics")
+digit_train <- read.csv("digit-train.csv")
+digit_test <- read.csv("digit-test.csv")
+
+digit_test$label <- factor(digit_test$label)
+digit_train$label <- factor(digit_train$label)
+```
+
+```{r}
+nb=naiveBayes(label~., data = digit_train, laplace = 1, na.action = na.pass)
+
+```
+
+
+```{r}
+pred = predict(nb, newdata = digit_test)
+```
+
+```{r}
+library(dplyr)    # data transformation
+library(ggplot2)  # data visualization
+library(caret)    # implementing with caret
+library(naivebayes) # naive bayes package
+```
+
+```{r}
+table(digit_test$label) %>% prop.table()
+table(digit_train$label) %>% prop.table()
+```
+
+```{r}
+# create response and feature data
+features <- setdiff(names(digit_train), "label")
+x <- digit_train[, features]
+y <- digit_train$label
+
+```
+
+##Tuning for Decision Tree
+We can tune the parameters of a decision tree
+
+```{r}
+# set up 3-fold cross validation procedure
+train_control <- trainControl(
+  method = "cv", 
+  number = 3
+  )
+
+# more advanced option, run 3 fold cross validation 10 times
+train_control_adv <- trainControl(
+  method = "repeatedcv", 
+  number = 3,
+  repeats = 10
+  )
+
+# set up tuning grid
+search_grid <- expand.grid(.cp=c(0.01,0.05,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45))
+
+# train model
+dt.m1 <- train(
+  x = x,
+  y = y,
+  method = "rpart",
+  trControl = train_control,
+  tuneGrid = search_grid
+  )
+
+# top 5 modesl
+dt.m1$results %>% 
+  top_n(5, wt = Accuracy) %>%
+  arrange(desc(Accuracy))
+
+# results for best model
+confusionMatrix(dt.m1)
+stime1 <- Sys.time()
+pred <- predict(dt.m1, newdata = digit_test)
+Sys.time() - stime1
+confusionMatrix(pred, digit_test$label)
+
+```
+Tuning for Naive Bayes Classifier
+
+```{r}
+# set up 3-fold cross validation procedure
+train_control <- trainControl(
+  method = "cv", 
+  number = 3
+  )
+
+# more advanced option, run 3 fold cross validation 10 times
+train_control_adv <- trainControl(
+  method = "repeatedcv", 
+  number = 3,
+  repeats = 10
+  )
+
+# set up tuning grid
+search_grid <- expand.grid(usekernel = c(FALSE),
+                         laplace = c(0, 1), 
+                         adjust = c(0,1,2))
+
+# train model
+nb.m1 <- train(
+  x = x,
+  y = y,
+  method = "naive_bayes",
+  trControl = train_control,
+  tuneGrid = search_grid
+  )
+
+```
+
+```{r}
+# top 5 modesl
+nb.m1$results %>% 
+  top_n(5, wt = Accuracy) %>%
+  arrange(desc(Accuracy))
+
+# results for best model
+confusionMatrix(nb.m1)
+stime <- Sys.time()
+pred <- predict(nb.m1, newdata = digit_test)
+Sys.time() - stime
+confusionMatrix(pred, digit_test$label)
+
+```
+
+
