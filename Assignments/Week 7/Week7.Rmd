@@ -1,0 +1,118 @@
+---
+title: "R Notebook"
+author: "Shivani Sanjay Mahaddalkar"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+##Libraries
+Importing appropriate libraries
+```{r}
+require(caret)
+require(e1071)
+require(rpart)
+require(dplyr)
+require(stringr)
+require(randomForest)
+library(tidyverse)    
+library(kernlab)      
+library(e1071)        
+library(RColorBrewer)
+#library(rsample)
+```
+
+
+##Data
+The analysis aims to build models to recognize the handwritten digits from 0-9. The data set comes from the Kaggle Digit Recognizer competition. We build KNN, SVM and random forests algorithms and compare their accuracies.
+Setting directory from which to extract data
+```{r}
+setwd("D:/Spring2021/DataAnalytics")
+digit_train <- read.csv("digit-train.csv")
+digit_test <- read.csv("digit-test.csv")
+
+```
+
+##Data Transformation:
+The label column which is the prediction column or the target column is changed from an integer type to a factor type to make the model understand that classification with 10 levels from 0-9 is taking place. 
+The columns which show zero variance are dropped, as they will not impact the prediction.
+```{r}
+var0 <- apply(digit_train, 2, var)!=0
+digit_train <- digit_train[,var0]
+digit_test <- digit_test[,colnames(digit_train)]
+digit_train$label <- factor(paste0('X', digit_train$label), levels = c('X0', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9'))
+digit_test$label <- factor(paste0('X', digit_test$label), levels = c('X0', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9'))
+```
+
+## Model: KNN algorithm
+```{r}
+search_grid = expand.grid(k = c(5, 7, 9, 11))
+
+# set up 3-fold cross validation procedure
+train_control <- trainControl(
+  method = "cv", 
+  number = 3
+  )
+
+# more advanced option, run 3 fold cross validation 5 times
+train_control_adv <- trainControl(
+  method = "repeatedcv", 
+  number = 3,
+  repeats = 5
+  )
+
+# train model
+knn <- train(label ~ .,
+  data = digit_train,
+  method = "knn",
+  trControl = train_control_adv,
+  tuneGrid = search_grid
+  )
+```
+
+```{r}
+# top model
+
+knn$results %>% 
+  top_n(1, wt = Accuracy) %>%
+  arrange(desc(Accuracy))
+
+# results for best model
+confusionMatrix(knn)
+#digit_train[,'pixel138']
+pred <- predict(knn, newdata = digit_test)
+```
+```{r}
+confusionMatrix(pred, digit_test$label)
+```
+##Model: SVM
+
+```{r}
+set.seed(123)
+svm.m1 <- svm(label ~ ., data = digit_train, type = 'C', kernel = 'linear', cross = 3, probability = TRUE)
+summary(svm.m1)
+set.seed(123)
+svm.m2 <- svm(label ~ ., data = digit_train, type = 'C', kernel = 'radial', cross = 3, probability = TRUE)
+summary(svm.m2)
+
+pred1 <- predict(svm.m1, newdata = digit_test)
+pred2 <- predict(svm.m2, newdata = digit_test)
+```
+```{r}
+confusionMatrix(pred1, digit_test$label)
+confusionMatrix(pred2, digit_test$label)
+```
+
+```{r}
+set.seed(123)
+train_control <- trainControl(method = 'repeatedcv', number = 3, repeats = 3)
+rf <- train(label ~ ., data = digit_train, method = 'rf', metric = 'Accuracy', trControl = train_control, type = 'C')
+confusionMatrix(rf)
+
+```
+
+```{r}
+pred3 <- predict(rf, newdata = digit_test)
+confusionMatrix(pred3, digit_test$label)
+```
