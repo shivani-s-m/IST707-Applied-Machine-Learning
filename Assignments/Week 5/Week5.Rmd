@@ -1,0 +1,169 @@
+---
+title: "Week5_Mahaddalkar_Shivani"
+author: "Shivani Sanjay Mahaddalkar"
+output: 
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load R Packages
+
+```{r}
+#Calling the appropriate packages
+# basic Rweka packages
+library(RWeka)       # Weka
+library(party)       # A computational toolbox for recursive partitioning
+library(partykit)    # A toolkit with infrastructure for representing, summarizing, and visualizing tree-structured regression and classification models.
+# Helper packages
+library(dplyr)       # for data wrangling
+library(ggplot2)     # for awesome plotting
+
+# Modeling packages
+library(rpart)       # direct engine for decision tree application
+library(caret)       # meta engine for decision tree application
+library(AmesHousing) # dataset
+
+# Model interpretability packages
+library(rpart.plot)  # for plotting decision trees
+library(vip)         # for feature importance
+library(pdp)         # for feature effects
+```
+
+
+#Data Preparation
+
+Load the csv file containing the data
+
+```{r}
+#Loading the data frame
+df <- read.csv("HW4-data-fedPapers85.csv")
+#Removing the filename column
+df <- df[,-2]
+head(df)
+```
+
+Separating data into training, testing and to-predict data.
+We are partitioning here such that, train and test data are in one dataset called trainTestData and the to-predict data is in another called predictionData
+
+```{r}
+trainTestData <- df[df$author!='dispt',]
+trainTestData$author <- as.factor(trainTestData$author)
+predictionData <- df[df$author=='dispt',]
+predictionData
+```
+
+Splitting the trainTestData into training and testing(validation) data sets. The partition is created such that 75% of the data is used for training and the remaining 25% is used for testing(validating).
+```{r}
+set.seed(123)
+trainData <- createDataPartition(trainTestData$author, p=.75, list = FALSE)
+trainingData <- trainTestData[trainData,]
+testingData <- trainTestData[-trainData,]
+```
+
+##Building up decision tree
+
+##Model 1: No feature engineering
+
+```{r}
+dt_model <- train(author ~ ., data = trainingData, metric = "Accuracy", method = "rpart")
+names(dt_model)
+```
+
+```{r}
+print(dt_model$finalModel)
+```
+```{r}
+confusionMatrix(dt_model,trainingData$authorship)
+```
+
+Using our model to predict for the test data
+
+```{r}
+testingData$pred <- predict (dt_model, newdata = testingData, type = c("raw"))
+confusionMatrix(testingData$author,testingData$pred)
+```
+
+The model presents an accuracy of 0.875 with the testing data. We will prune and imporve the performance to finally try to predict on our unknown essays list.
+
+## Model 2: Some feature engineering
+
+In this model the number of papers in a split are set to a minimum of 10 papers in a bucket and a maximum depth of 4.
+
+```{r}
+dt_model2 <- rpart(author~., data = trainingData, method = "class", control = rpart.control(cp=0,minsplit=10, maxdepth=4))
+rpart.plot(dt_model2)
+```
+
+```{r}
+testingData$pred <- predict(dt_model2, newdata = testingData, type = c("class"))
+confusionMatrix(testingData$author,testingData$pred)
+```
+
+By setting a minimum number of papers in a split to 10 and a maximum depth of 10 the accuracy went up to 93.75%.
+
+##Model 3: Looping through the min number of instances
+
+```{r}
+## set up potential values for confidence factor and minimum number of instances
+C.values <- c(0.01,0.05,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.5)
+M.values <- c(2,3,4,5,6,7,8,9,10)
+
+## variable to record the best model
+best_performance = 0.0
+best_c <- 0.0
+best_m <- 0.0
+
+for (i in 1:length(C.values)) {
+  
+  for (j in 1:length(M.values)) {
+    
+    c_value = C.values[i]
+    
+    m_value = M.values[j]
+    
+    m <- J48(author~., data = trainingData, 
+             control = Weka_control(U=FALSE, C = c_value, M=m_value))
+  
+    e <- evaluate_Weka_classifier(m,
+                                  numFolds = 3, complexity = TRUE,
+                                  seed = 9, class = TRUE)
+
+    if (e$details['pctCorrect'] > best_performance) {
+      best_performance <- e$details['pctCorrect']
+      
+      best_c <- c_value
+      best_m <- m_value
+    }
+    
+  }
+    
+}
+
+print(paste("best accuracy: ", best_performance))
+print(paste("best m: ", best_m))
+print(paste("best c: ", best_c))
+
+m=J48(author~., data = trainingData, control=Weka_control(U=FALSE, M=best_m, C=best_c))
+
+testingData$pred<- predict (m, newdata = testingData, type = c("class"))
+confusionMatrix(testingData$author,testingData$pred)
+```
+
+Here with the test data our accuracy is less than the previous model which is 87.5%. Therefore we go with the dt_model2 to make our final predicitions.
+
+##Prediction
+We can use the trained model 'dt_model2' to now use to predict for the unknown essay authorship.
+
+```{r}
+
+predictionData$author <- predict(dt_model2, newdata = predictionData, type = c("class"))
+table(predictionData$author)
+
+```
+Our model assigns all of the 11 articles to Madison. In the cluster assignment, my analysis was that the articles were definitely not written by Hamilton, however the cluster analysis showed that the HM papers were classified in the same clusters as that of Madison's. However, in this analysis, it can be clearly seen that the papers are classified as Madison. Hence, this can be taken as further evidence that the paperswere infact written by Madison.
